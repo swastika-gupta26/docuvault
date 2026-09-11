@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -150,6 +151,93 @@ public class DocumentService {
         }
 
         return document.getCurrentVersion();
+    }
+
+    public List<Version> getVersionHistory(Long id) {
+
+        User currentUser = getCurrentUser();
+
+        Document document = documentRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Document not found"));
+
+        if (!document.getOwner().getId().equals(currentUser.getId())) {
+            throw new RuntimeException(
+                    "You are not allowed to view version history"
+            );
+        }
+
+        return versionRepository
+                .findByDocumentOrderByVersionNumberDesc(document);
+    }
+    public Version getSpecificVersion(Long documentId, Long versionId) {
+
+        User currentUser = getCurrentUser();
+
+        Document document = documentRepository.findById(documentId)
+                .orElseThrow(() -> new RuntimeException("Document not found"));
+
+        if (!document.getOwner().getId().equals(currentUser.getId())) {
+            throw new RuntimeException(
+                    "You are not allowed to download this version"
+            );
+        }
+
+        Version version = versionRepository.findById(versionId)
+                .orElseThrow(() -> new RuntimeException("Version not found"));
+
+        if (!version.getDocument().getId().equals(documentId)) {
+            throw new RuntimeException(
+                    "This version does not belong to this document"
+            );
+        }
+
+        return version;
+    }
+    @Transactional
+    public Version restoreVersion(Long documentId, Long versionId) {
+
+        User currentUser = getCurrentUser();
+
+        Document document = documentRepository.findById(documentId)
+                .orElseThrow(() -> new RuntimeException("Document not found"));
+
+        if (!document.getOwner().getId().equals(currentUser.getId())) {
+            throw new RuntimeException(
+                    "You are not allowed to restore this version"
+            );
+        }
+
+        Version oldVersion = versionRepository.findById(versionId)
+                .orElseThrow(() -> new RuntimeException("Version not found"));
+
+        if (!oldVersion.getDocument().getId().equals(documentId)) {
+            throw new RuntimeException(
+                    "This version does not belong to this document"
+            );
+        }
+
+        int nextVersionNumber = 1;
+
+        if (document.getCurrentVersion() != null) {
+            nextVersionNumber =
+                    document.getCurrentVersion().getVersionNumber() + 1;
+        }
+
+        Version restoredVersion = new Version();
+
+        restoredVersion.setVersionNumber(nextVersionNumber);
+        restoredVersion.setFileName(oldVersion.getFileName());
+        restoredVersion.setFilePath(oldVersion.getFilePath());
+        restoredVersion.setFileSize(oldVersion.getFileSize());
+        restoredVersion.setMimeType(oldVersion.getMimeType());
+        restoredVersion.setDocument(document);
+
+        versionRepository.save(restoredVersion);
+
+        document.setCurrentVersion(restoredVersion);
+        documentRepository.save(document);
+
+        return restoredVersion;
     }
 
 }

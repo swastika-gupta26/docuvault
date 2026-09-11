@@ -86,4 +86,45 @@ public class DocumentController {
                 )
                 .body(resource);
     }
+    @GetMapping("/{id}/versions")
+    public ResponseEntity<List<Version>> getVersionHistory(
+            @PathVariable Long id) {
+
+        List<Version> versions =
+                documentService.getVersionHistory(id);
+
+        return ResponseEntity.ok(versions);
+    }
+    @GetMapping("/{documentId}/versions/{versionId}/download")
+    public ResponseEntity<Resource> downloadSpecificVersion(
+            @PathVariable Long documentId,
+            @PathVariable Long versionId) {
+
+        Version version =
+                documentService.getSpecificVersion(documentId, versionId);
+
+        Resource resource = new FileSystemResource(version.getFilePath());
+
+        if (!resource.exists()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(version.getMimeType()))
+                .header(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"" + version.getFileName() + "\""
+                )
+                .body(resource);
+    }
+    @PostMapping("/{documentId}/versions/{versionId}/restore")
+    public ResponseEntity<Version> restoreVersion(
+            @PathVariable Long documentId,
+            @PathVariable Long versionId) {
+
+        Version restoredVersion =
+                documentService.restoreVersion(documentId, versionId);
+
+        return ResponseEntity.ok(restoredVersion);
+    }
 }
