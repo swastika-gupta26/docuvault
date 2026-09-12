@@ -2,6 +2,7 @@ package com.docuvault.docuvault.service;
 
 import com.docuvault.docuvault.dto.DocumentRequest;
 import com.docuvault.docuvault.entity.Document;
+import com.docuvault.docuvault.entity.Permission;
 import com.docuvault.docuvault.entity.User;
 import com.docuvault.docuvault.entity.Version;
 import com.docuvault.docuvault.repository.DocumentRepository;
@@ -25,6 +26,7 @@ public class DocumentService {
     private final UserRepository userRepository;
     private final VersionRepository versionRepository;
     private final FileStorageService fileStorageService;
+    private final PermissionService permissionService;
 
     private User getCurrentUser() {
 
@@ -62,8 +64,16 @@ public class DocumentService {
         Document document = documentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Document not found"));
 
-        if (!document.getOwner().getId().equals(currentUser.getId())) {
-            throw new RuntimeException("You are not allowed to update this document");
+        if (!permissionService.isOwner(document, currentUser)) {
+
+            Permission.PermissionType permission =
+                    permissionService.getUserPermission(document, currentUser);
+
+            if (permission != Permission.PermissionType.EDITOR) {
+                throw new RuntimeException(
+                        "Only the owner or editor can update this document"
+                );
+            }
         }
 
         document.setTitle(request.getTitle());
@@ -96,8 +106,16 @@ public class DocumentService {
                     .orElseThrow(() -> new RuntimeException("Document not found"));
 
             // Only owner can upload for now
-            if (!document.getOwner().getId().equals(currentUser.getId())) {
-                throw new RuntimeException("You are not allowed to upload file");
+            if (!permissionService.isOwner(document, currentUser)) {
+
+                Permission.PermissionType permission =
+                        permissionService.getUserPermission(document, currentUser);
+
+                if (permission != Permission.PermissionType.EDITOR) {
+                    throw new RuntimeException(
+                            "Only the owner or editor can upload files"
+                    );
+                }
             }
 
             if (file.isEmpty()) {
@@ -142,8 +160,18 @@ public class DocumentService {
                 .orElseThrow(() -> new RuntimeException("Document not found"));
 
         // Only owner can download for now
-        if (!document.getOwner().getId().equals(currentUser.getId())) {
-            throw new RuntimeException("You are not allowed to download this document");
+        if (!permissionService.isOwner(document, currentUser)) {
+
+            Permission.PermissionType permission =
+                    permissionService.getUserPermission(document, currentUser);
+
+            if (permission != Permission.PermissionType.EDITOR &&
+                    permission != Permission.PermissionType.VIEWER) {
+
+                throw new RuntimeException(
+                        "You do not have permission to view this document"
+                );
+            }
         }
 
         if (document.getCurrentVersion() == null) {
@@ -176,10 +204,18 @@ public class DocumentService {
         Document document = documentRepository.findById(documentId)
                 .orElseThrow(() -> new RuntimeException("Document not found"));
 
-        if (!document.getOwner().getId().equals(currentUser.getId())) {
-            throw new RuntimeException(
-                    "You are not allowed to download this version"
-            );
+        if (!permissionService.isOwner(document, currentUser)) {
+
+            Permission.PermissionType permission =
+                    permissionService.getUserPermission(document, currentUser);
+
+            if (permission != Permission.PermissionType.EDITOR &&
+                    permission != Permission.PermissionType.VIEWER) {
+
+                throw new RuntimeException(
+                        "You do not have permission to download this version"
+                );
+            }
         }
 
         Version version = versionRepository.findById(versionId)
