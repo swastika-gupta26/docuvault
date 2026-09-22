@@ -5,6 +5,7 @@ import com.docuvault.docuvault.entity.Permission;
 import com.docuvault.docuvault.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface PermissionRepository extends JpaRepository<Permission, Long> {
@@ -12,4 +13,5 @@ public interface PermissionRepository extends JpaRepository<Permission, Long> {
             Document document,
             User user
     );
+    List<Permission> findByUser(User user);
 }

@@ -6,6 +6,7 @@ import com.docuvault.docuvault.entity.Permission;
 import com.docuvault.docuvault.entity.User;
 import com.docuvault.docuvault.entity.Version;
 import com.docuvault.docuvault.repository.DocumentRepository;
+import com.docuvault.docuvault.repository.PermissionRepository;
 import com.docuvault.docuvault.repository.UserRepository;
 import com.docuvault.docuvault.repository.VersionRepository;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +15,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import com.docuvault.docuvault.service.EncryptionService;
 
 import java.io.IOException;
 import java.util.List;
@@ -27,6 +29,8 @@ public class DocumentService {
     private final VersionRepository versionRepository;
     private final FileStorageService fileStorageService;
     private final PermissionService permissionService;
+    private final PermissionRepository permissionRepository;
+    private final EncryptionService encryptionService;
 
     private User getCurrentUser() {
 
@@ -55,7 +59,22 @@ public class DocumentService {
 
         User currentUser = getCurrentUser();
 
-        return documentRepository.findByOwner(currentUser);
+        List<Document> documents =
+                documentRepository.findByOwner(currentUser);
+
+        List<Permission> permissions =
+                permissionRepository.findByUser(currentUser);
+
+        for (Permission permission : permissions) {
+
+            Document document = permission.getDocument();
+
+            if (!documents.contains(document)) {
+                documents.add(document);
+            }
+        }
+
+        return documents;
     }
     public Document updateDocument(Long id, DocumentRequest request) {
 
@@ -123,7 +142,15 @@ public class DocumentService {
             }
 
             // Store actual file
-            String filePath = fileStorageService.storeFile(file);
+            byte[] fileBytes = file.getBytes();
+
+            byte[] encryptedBytes = encryptionService.encrypt(fileBytes);
+
+            String filePath =
+                    fileStorageService.storeEncryptedFile(
+                            encryptedBytes,
+                            file.getOriginalFilename()
+                    );
 
             // Decide version number
             int versionNumber = 1;

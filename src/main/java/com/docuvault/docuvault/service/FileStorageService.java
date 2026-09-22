@@ -16,6 +16,7 @@ public class FileStorageService {
 
     public FileStorageService() throws IOException {
         Files.createDirectories(storageLocation);
+        System.out.println("UPLOAD FOLDER = " + storageLocation.toAbsolutePath());
     }
 
     public String storeFile(MultipartFile file) throws IOException {
@@ -25,6 +26,17 @@ public class FileStorageService {
         Path filePath = storageLocation.resolve(fileName);
 
         Files.copy(file.getInputStream(), filePath);
+
+        return filePath.toString();
+    }
+    public String storeEncryptedFile(byte[] encryptedData, String originalFileName)
+            throws IOException {
+
+        String fileName = UUID.randomUUID() + "_" + originalFileName;
+
+        Path filePath = storageLocation.resolve(fileName);
+
+        Files.write(filePath, encryptedData);
 
         return filePath.toString();
     }
