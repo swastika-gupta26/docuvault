@@ -15,7 +15,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import com.docuvault.docuvault.service.EncryptionService;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -33,9 +34,13 @@ public class DocumentController {
 
     @PostMapping
     public ResponseEntity<DocumentResponse> createDocument(
-            @Valid @RequestBody DocumentRequest request) {
+            @Valid @RequestBody DocumentRequest request,
+            HttpServletRequest httpRequest) {
 
-        Document document = documentService.createDocument(request);
+        String ipAddress = httpRequest.getRemoteAddr();
+
+        Document document =
+                documentService.createDocument(request, ipAddress);
 
         return ResponseEntity.ok(new DocumentResponse(document));
     }
@@ -50,12 +55,25 @@ public class DocumentController {
 
         return ResponseEntity.ok(response);
     }
+    @GetMapping("/search")
+    public ResponseEntity<List<Document>> searchDocuments(
+            @RequestParam String title) {
+
+        List<Document> documents =
+                documentService.searchDocuments(title);
+
+        return ResponseEntity.ok(documents);
+    }
     @PutMapping("/{id}")
     public ResponseEntity<DocumentResponse> updateDocument(
             @PathVariable Long id,
-            @Valid @RequestBody DocumentRequest request) {
+            @Valid @RequestBody DocumentRequest request,
+            HttpServletRequest httpRequest) {
 
-        Document document = documentService.updateDocument(id, request);
+        String ipAddress = httpRequest.getRemoteAddr();
+
+        Document document =
+                documentService.updateDocument(id, request, ipAddress);
 
         return ResponseEntity.ok(new DocumentResponse(document));
     }
@@ -63,9 +81,12 @@ public class DocumentController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteDocument(
-            @PathVariable Long id) {
+            @PathVariable Long id,
+            HttpServletRequest httpRequest) {
 
-        documentService.deleteDocument(id);
+        String ipAddress = httpRequest.getRemoteAddr();
+
+        documentService.deleteDocument(id, ipAddress);
 
         return ResponseEntity.ok("Document deleted successfully");
     }
@@ -73,17 +94,26 @@ public class DocumentController {
     @PostMapping("/{id}/upload")
     public ResponseEntity<String> uploadFile(
             @PathVariable Long id,
-            @RequestParam("file") MultipartFile file) {
+            @RequestParam("file") MultipartFile file,
+            HttpServletRequest httpRequest) {
 
-        documentService.uploadFile(id, file);
+        String ipAddress = httpRequest.getRemoteAddr();
+
+        documentService.uploadFile(id, file, ipAddress);
 
         return ResponseEntity.ok("File uploaded successfully");
     }
 
     @GetMapping("/{id}/download")
-    public ResponseEntity<byte[]> downloadFile(@PathVariable Long id) {
+    public ResponseEntity<byte[]> downloadFile(
+            @PathVariable Long id,
+            HttpServletRequest httpRequest) {
 
-        Version version = documentService.getCurrentVersion(id);
+        String ipAddress = httpRequest.getRemoteAddr();
+
+        Version version =
+                documentService.getCurrentVersion(id, ipAddress);
+
 
         try {
             Path path = Paths.get(version.getFilePath());
@@ -120,11 +150,17 @@ public class DocumentController {
     @GetMapping("/{documentId}/versions/{versionId}/download")
     public ResponseEntity<byte[]> downloadSpecificVersion(
             @PathVariable Long documentId,
-            @PathVariable Long versionId) {
+            @PathVariable Long versionId,
+            HttpServletRequest httpRequest) {
+
+        String ipAddress = httpRequest.getRemoteAddr();
 
         Version version =
-                documentService.getSpecificVersion(documentId, versionId);
-
+                documentService.getSpecificVersion(
+                        documentId,
+                        versionId,
+                        ipAddress
+                );
         try {
             Path path = Paths.get(version.getFilePath());
 
@@ -151,10 +187,17 @@ public class DocumentController {
     @PostMapping("/{documentId}/versions/{versionId}/restore")
     public ResponseEntity<Version> restoreVersion(
             @PathVariable Long documentId,
-            @PathVariable Long versionId) {
+            @PathVariable Long versionId,
+            HttpServletRequest httpRequest) {
+
+        String ipAddress = httpRequest.getRemoteAddr();
 
         Version restoredVersion =
-                documentService.restoreVersion(documentId, versionId);
+                documentService.restoreVersion(
+                        documentId,
+                        versionId,
+                        ipAddress
+                );
 
         return ResponseEntity.ok(restoredVersion);
     }

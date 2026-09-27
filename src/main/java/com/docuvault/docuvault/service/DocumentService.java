@@ -31,6 +31,7 @@ public class DocumentService {
     private final PermissionService permissionService;
     private final PermissionRepository permissionRepository;
     private final EncryptionService encryptionService;
+    private final AuditLogService auditLogService;
 
     private User getCurrentUser() {
 
@@ -43,8 +44,9 @@ public class DocumentService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
     }
 
-    public Document createDocument(DocumentRequest request) {
-
+    public Document createDocument(
+            DocumentRequest request,
+            String ipAddress) {
         User currentUser = getCurrentUser();
 
         Document document = new Document();
@@ -53,7 +55,16 @@ public class DocumentService {
         document.setDescription(request.getDescription());
         document.setOwner(currentUser);
 
-        return documentRepository.save(document);
+        Document savedDocument = documentRepository.save(document);
+
+        auditLogService.log(
+                currentUser,
+                savedDocument,
+                "DOCUMENT_CREATED",
+                ipAddress
+        );
+
+        return savedDocument;
     }
     public List<Document> getMyDocuments() {
 
@@ -76,7 +87,16 @@ public class DocumentService {
 
         return documents;
     }
-    public Document updateDocument(Long id, DocumentRequest request) {
+    public List<Document> searchDocuments(String title) {
+
+        User currentUser = getCurrentUser();
+
+        return documentRepository.searchAccessibleDocuments(
+                currentUser,
+                title
+        );
+    }
+    public Document updateDocument(Long id, DocumentRequest request, String ipAddress) {
 
         User currentUser = getCurrentUser();
 
@@ -98,11 +118,20 @@ public class DocumentService {
         document.setTitle(request.getTitle());
         document.setDescription(request.getDescription());
 
-        return documentRepository.save(document);
+        Document updatedDocument = documentRepository.save(document);
+
+        auditLogService.log(
+                currentUser,
+                document,
+                "DOCUMENT_UPDATED",
+                null
+        );
+
+        return updatedDocument;
     }
 
 
-    public void deleteDocument(Long id) {
+    public void deleteDocument(Long id, String ipAddress) {
 
         User currentUser = getCurrentUser();
 
@@ -113,10 +142,20 @@ public class DocumentService {
             throw new RuntimeException("You are not allowed to delete this document");
         }
 
+        auditLogService.log(
+                currentUser,
+                document,
+                "DOCUMENT_DELETED",
+                null
+        );
+
         documentRepository.delete(document);
     }
 
-    public void uploadFile(Long id, MultipartFile file) {
+    public void uploadFile(
+            Long id,
+            MultipartFile file,
+            String ipAddress) {
 
         try {
             User currentUser = getCurrentUser();
@@ -174,12 +213,18 @@ public class DocumentService {
             // Make this the current version
             document.setCurrentVersion(version);
             documentRepository.save(document);
+            auditLogService.log(
+                    currentUser,
+                    document,
+                    "FILE_UPLOADED",
+                    null
+            );
 
         } catch (IOException e) {
             throw new RuntimeException("File upload failed", e);
         }
     }
-    public Version getCurrentVersion(Long id) {
+    public Version getCurrentVersion(Long id, String ipAddress) {
 
         User currentUser = getCurrentUser();
 
@@ -204,6 +249,12 @@ public class DocumentService {
         if (document.getCurrentVersion() == null) {
             throw new RuntimeException("No file uploaded for this document");
         }
+        auditLogService.log(
+                currentUser,
+                document,
+                "DOCUMENT_DOWNLOADED",
+                ipAddress
+        );
 
         return document.getCurrentVersion();
     }
@@ -224,7 +275,10 @@ public class DocumentService {
         return versionRepository
                 .findByDocumentOrderByVersionNumberDesc(document);
     }
-    public Version getSpecificVersion(Long documentId, Long versionId) {
+    public Version getSpecificVersion(
+            Long documentId,
+            Long versionId,
+            String ipAddress) {
 
         User currentUser = getCurrentUser();
 
@@ -253,11 +307,20 @@ public class DocumentService {
                     "This version does not belong to this document"
             );
         }
+        auditLogService.log(
+                currentUser,
+                document,
+                "VERSION_DOWNLOADED",
+                ipAddress
+        );
 
         return version;
     }
     @Transactional
-    public Version restoreVersion(Long documentId, Long versionId) {
+    public Version restoreVersion(
+            Long documentId,
+            Long versionId,
+            String ipAddress) {
 
         User currentUser = getCurrentUser();
 
@@ -299,6 +362,13 @@ public class DocumentService {
 
         document.setCurrentVersion(restoredVersion);
         documentRepository.save(document);
+
+        auditLogService.log(
+                currentUser,
+                document,
+                "VERSION_RESTORED",
+                ipAddress
+        );
 
         return restoredVersion;
     }
