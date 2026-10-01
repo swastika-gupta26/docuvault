@@ -26,6 +26,6 @@ public class AuditLogService {
         auditLog.setAction(action);
         auditLog.setIpAddress(ipAddress);
 
-        auditLogRepository.save(auditLog);
+        auditLogRepository.saveAndFlush(auditLog);
     }
 }

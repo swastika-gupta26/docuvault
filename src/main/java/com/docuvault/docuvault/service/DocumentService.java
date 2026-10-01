@@ -5,10 +5,7 @@ import com.docuvault.docuvault.entity.Document;
 import com.docuvault.docuvault.entity.Permission;
 import com.docuvault.docuvault.entity.User;
 import com.docuvault.docuvault.entity.Version;
-import com.docuvault.docuvault.repository.DocumentRepository;
-import com.docuvault.docuvault.repository.PermissionRepository;
-import com.docuvault.docuvault.repository.UserRepository;
-import com.docuvault.docuvault.repository.VersionRepository;
+import com.docuvault.docuvault.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -32,6 +29,7 @@ public class DocumentService {
     private final PermissionRepository permissionRepository;
     private final EncryptionService encryptionService;
     private final AuditLogService auditLogService;
+    private final AuditLogRepository auditLogRepository;
 
     private User getCurrentUser() {
 
@@ -131,6 +129,7 @@ public class DocumentService {
     }
 
 
+    @Transactional
     public void deleteDocument(Long id, String ipAddress) {
 
         User currentUser = getCurrentUser();
@@ -139,17 +138,22 @@ public class DocumentService {
                 .orElseThrow(() -> new RuntimeException("Document not found"));
 
         if (!document.getOwner().getId().equals(currentUser.getId())) {
-            throw new RuntimeException("You are not allowed to delete this document");
+            throw new RuntimeException(
+                    "You are not allowed to delete this document"
+            );
         }
+
+        auditLogRepository.detachDocument(document);
+
+        documentRepository.delete(document);
+        documentRepository.flush();
 
         auditLogService.log(
                 currentUser,
-                document,
+                null,
                 "DOCUMENT_DELETED",
-                null
+                ipAddress
         );
-
-        documentRepository.delete(document);
     }
 
     public void uploadFile(
