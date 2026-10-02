@@ -56,13 +56,15 @@ public class DocumentController {
         return ResponseEntity.ok(response);
     }
     @GetMapping("/search")
-    public ResponseEntity<List<Document>> searchDocuments(
+    public ResponseEntity<List<DocumentResponse>> searchDocuments(
             @RequestParam String title) {
 
-        List<Document> documents =
-                documentService.searchDocuments(title);
+        List<DocumentResponse> response =
+                documentService.searchDocuments(title).stream()
+                        .map(DocumentResponse::new)
+                        .toList();
 
-        return ResponseEntity.ok(documents);
+        return ResponseEntity.ok(response);
     }
     @PutMapping("/{id}")
     public ResponseEntity<DocumentResponse> updateDocument(

@@ -38,13 +38,12 @@ public class SecurityConfig {
                                 "/api/auth/register",
                                 "/api/auth/login",
                                 "/api/auth/refresh",
-                                "/api/share/*",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/v3/api-docs/**",
                                 "/error"
                         ).permitAll()
-
+                        .requestMatchers(HttpMethod.GET, "/api/share/*").permitAll()
                         .anyRequest().authenticated()
                 )
 

@@ -1,6 +1,7 @@
 package com.docuvault.docuvault.controller;
 
 import com.docuvault.docuvault.dto.PermissionRequest;
+import com.docuvault.docuvault.dto.PermissionResponse;
 import com.docuvault.docuvault.entity.Permission;
 import com.docuvault.docuvault.service.PermissionService;
 import jakarta.validation.Valid;
@@ -16,13 +17,13 @@ public class PermissionController {
     private final PermissionService permissionService;
 
     @PostMapping("/{documentId}/permissions")
-    public ResponseEntity<Permission> assignPermission(
+    public ResponseEntity<PermissionResponse> assignPermission(
             @PathVariable Long documentId,
             @Valid @RequestBody PermissionRequest request) {
 
         Permission permission =
                 permissionService.assignPermission(documentId, request);
 
-        return ResponseEntity.ok(permission);
+        return ResponseEntity.ok(new PermissionResponse(permission));
     }
 }
