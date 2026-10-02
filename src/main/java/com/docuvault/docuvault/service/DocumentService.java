@@ -30,6 +30,7 @@ public class DocumentService {
     private final EncryptionService encryptionService;
     private final AuditLogService auditLogService;
     private final AuditLogRepository auditLogRepository;
+    private final ShareLinkRepository shareLinkRepository;
 
     private User getCurrentUser() {
 
@@ -148,6 +149,8 @@ public class DocumentService {
         permissionRepository.deleteByDocument(document);
 
         versionRepository.deleteByDocument(document);
+        shareLinkRepository.deleteByDocument(document);
+
 
         documentRepository.delete(document);
         documentRepository.flush();
