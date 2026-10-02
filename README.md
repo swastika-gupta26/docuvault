@@ -211,6 +211,7 @@ Deployed on **Render** as a Docker Web Service with a Render PostgreSQL database
 
 ## Author
 
-**Swastika** — B.Tech IT, KNIT Sultanpur
-GitHub: https://github.com/swastika-gupta26
- · LinkedIn:  https://www.linkedin.com/in/swastika-gupta-4ba45932b/
+**Swastika**, B.Tech IT, KNIT Sultanpur
+
+- GitHub: [swastika-gupta26](https://github.com/swastika-gupta26)
+- LinkedIn: [Swastika Gupta](https://www.linkedin.com/in/swastika-gupta-4ba45932b/)
