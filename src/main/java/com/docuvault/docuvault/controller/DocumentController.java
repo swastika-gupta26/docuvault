@@ -91,7 +91,10 @@ public class DocumentController {
         return ResponseEntity.ok("Document deleted successfully");
     }
 
-    @PostMapping("/{id}/upload")
+    @PostMapping(
+            value = "/{id}/upload",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
     public ResponseEntity<String> uploadFile(
             @PathVariable Long id,
             @RequestParam("file") MultipartFile file,
