@@ -8,4 +8,5 @@ import java.util.List;
 
 public interface VersionRepository extends JpaRepository<Version, Long> {
     List<Version> findByDocumentOrderByVersionNumberDesc(Document document);
+    void deleteByDocument(Document document);
 }

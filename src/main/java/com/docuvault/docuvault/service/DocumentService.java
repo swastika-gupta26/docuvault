@@ -145,6 +145,8 @@ public class DocumentService {
 
         auditLogRepository.detachDocument(document);
 
+        versionRepository.deleteByDocument(document);
+
         documentRepository.delete(document);
         documentRepository.flush();
 
