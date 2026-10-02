@@ -14,4 +14,5 @@ public interface PermissionRepository extends JpaRepository<Permission, Long> {
             User user
     );
     List<Permission> findByUser(User user);
+    void deleteByDocument(Document document);
 }
